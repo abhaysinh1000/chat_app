@@ -39,6 +39,12 @@ export const sendMessageServices = asyncHandler(
     conversation.lastMessage = message._id;
     await conversation.save();
 
+    await message.populate({
+      path: "sender",
+      select: "firstName lastName email",
+      model: "User",
+    });
+
     return message;
   },
 );
@@ -55,7 +61,11 @@ export const getMessageServices = asyncHandler(
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate("sender", "username");
+      .populate({
+        path: "sender",
+        select: "firstName lastName email",
+        model: "User",
+      });
 
     return message.reverse();
   },
@@ -74,7 +84,20 @@ export const createOrGetPrivateConversation = asyncHandler(
     });
 
     if (existingConverstion) {
-      return existingConverstion;
+      return Conversation.findById(existingConverstion._id)
+        .populate({
+          path: "members",
+          select: "firstName lastName email",
+          model: "User",
+        })
+        .populate({
+          path: "lastMessage",
+          populate: {
+            path: "sender",
+            select: "firstName lastName email",
+            model: "User",
+          },
+        });
     }
 
     const newConversation = await Conversation.create({
@@ -82,7 +105,20 @@ export const createOrGetPrivateConversation = asyncHandler(
       members: [userId, targetUserId],
     });
 
-    return newConversation;
+    return Conversation.findById(newConversation._id)
+      .populate({
+        path: "members",
+        select: "firstName lastName email",
+        model: "User",
+      })
+      .populate({
+        path: "lastMessage",
+        populate: {
+          path: "sender",
+          select: "firstName lastName email",
+          model: "User",
+        },
+      });
   },
 );
 
@@ -91,12 +127,17 @@ export const getUserConversations = asyncHandler(async (userId) => {
   const conversations = await Conversation.find({
     members: userId,
   })
-    .populate("members", "username")
+    .populate({
+      path: "members",
+      select: "firstName lastName email",
+      model: "User",
+    })
     .populate({
       path: "lastMessage",
       populate: {
         path: "sender",
-        select: "username",
+        select: "firstName lastName email",
+        model: "User",
       },
     })
     .sort({ updatedAt: -1 });

@@ -10,14 +10,20 @@ export const chatApi = baseApi.injectEndpoints({
       providesTags: ["Chat"],
     }),
 
-    createConnversation: builder.mutation({
+    createConversation: builder.mutation({
       query: (body) => ({
         url: "/conversation",
         method: "POST",
         body,
       }),
-
       invalidatesTags: ["Chat"],
+    }),
+
+    searchUsers: builder.query({
+      query: (query) => ({
+        url: `/conversation/users/search?query=${encodeURIComponent(query)}`,
+        method: "GET",
+      }),
     }),
 
     getMessages: builder.query({
@@ -34,7 +40,6 @@ export const chatApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-
       invalidatesTags: ["Chat"],
     }),
   }),
@@ -43,6 +48,7 @@ export const chatApi = baseApi.injectEndpoints({
 export const {
   useSendMessageMutation,
   useGetMessagesQuery,
-  useCreateConnversationMutation,
+  useCreateConversationMutation,
   useGetConversationsQuery,
+  useLazySearchUsersQuery,
 } = chatApi;
