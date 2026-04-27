@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "../pages/Login.jsx";
 import Signup from "../pages/Signup.jsx";
 import ProtectedRoute from "../features/auth/ProtectedRoute.jsx";
@@ -22,6 +22,9 @@ const AppRoutes = () => {
           <Route path="/check-email" element={<CheckEmail />} />
         </Route>
 
+
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
         {/* public Route  */}
         <Route path="/forgot-password" element={<ForgetPassword />} />
         <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
@@ -33,8 +36,10 @@ const AppRoutes = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="verify-email" element={<Verify_email />} />
           <Route path="/chat" element={<ChatPage />} />
-          <Route />
         </Route>
+
+
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>
   );
