@@ -18,7 +18,7 @@ import socketHandler from "./sockets/index.js";
 import socketAuthMiddleware from "./middleware/socketAuth.middleware.js";
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = Number(process.env.PORT) || 1000;
 
 // Socket Config
 
