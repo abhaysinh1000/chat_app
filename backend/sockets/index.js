@@ -8,6 +8,7 @@ import Conversation from "../models/conversation.model.js";
 
 import { handleMessageEvents } from "./handlers/message.handler.js";
 import { handleChannelEvents } from "./handlers/channel.handler.js";
+import { handleTypingEvents } from "./handlers/typing.handler.js";
 
 const socketHandler = (io) => {
   io.on("connection", async (socket) => {
