@@ -76,7 +76,20 @@ export const createOrGetPrivateConversation = asyncHandler(
     });
 
     if (existingConverstion) {
-      return existingConverstion;
+      return Conversation.findById(existingConverstion._id)
+        .populate({
+          path: "members",
+          select: "firstName lastName email",
+          model: "User",
+        })
+        .populate({
+          path: "lastMessage",
+          populate: {
+            path: "sender",
+            select: "firstName lastName email",
+            model: "User",
+          },
+        });
     }
 
     const newConversation = await Conversation.create({
@@ -84,7 +97,20 @@ export const createOrGetPrivateConversation = asyncHandler(
       members: [userId, targetUserId],
     });
 
-    return newConversation;
+    return Conversation.findById(newConversation._id)
+      .populate({
+        path: "members",
+        select: "firstName lastName email",
+        model: "User",
+      })
+      .populate({
+        path: "lastMessage",
+        populate: {
+          path: "sender",
+          select: "firstName lastName email",
+          model: "User",
+        },
+      });
   },
 );
 
