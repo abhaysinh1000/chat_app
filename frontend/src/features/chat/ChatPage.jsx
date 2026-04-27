@@ -3,12 +3,9 @@ import ChatWindow from "./ChatWindow";
 
 const ChatPage = () => {
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
-      <div style={{ width: "30%", borderRight: "1px solid #ccc" }}>
+    <div className="h-screen bg-gray-100 p-3 md:p-4">
+      <div className="h-full max-w-7xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden grid grid-cols-1 md:grid-cols-[340px_1fr]">
         <ConversationList />
-      </div>
-
-      <div style={{ width: "70%" }}>
         <ChatWindow />
       </div>
     </div>

@@ -39,6 +39,8 @@ export const sendMessageServices = asyncHandler(
     conversation.lastMessage = message._id;
     await conversation.save();
 
+    await message.populate("sender", "firstName lastName email");
+
     return message;
   },
 );
@@ -55,7 +57,7 @@ export const getMessageServices = asyncHandler(
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate("sender", "username");
+      .populate("sender", "firstName lastName email");
 
     return message.reverse();
   },
@@ -91,12 +93,12 @@ export const getUserConversations = asyncHandler(async (userId) => {
   const conversations = await Conversation.find({
     members: userId,
   })
-    .populate("members", "username")
+    .populate("members", "firstName lastName email")
     .populate({
       path: "lastMessage",
       populate: {
         path: "sender",
-        select: "username",
+        select: "firstName lastName email",
       },
     })
     .sort({ updatedAt: -1 });

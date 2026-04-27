@@ -1,8 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { clearAuth } from "../features/auth/authSlice";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:1000/api";
+
 const rawbaseQuery = fetchBaseQuery({
-  baseUrl: "http://localhost:1000/api",
+  baseUrl: API_BASE_URL,
   credentials: "include",
 });
 
