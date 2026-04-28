@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   useCreateConversationMutation,
+  useCreateGroupConversationMutation,
   useGetConversationsQuery,
   useLazySearchUsersQuery,
 } from "./chat.api";
@@ -32,11 +33,16 @@ const ConversationList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [startChatError, setStartChatError] = useState("");
+  const [isGroupMode, setIsGroupMode] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [groupMembers, setGroupMembers] = useState([]);
 
   const { data, isLoading, refetch } = useGetConversationsQuery();
   const [searchUsers, { isFetching: isSearching }] = useLazySearchUsersQuery();
   const [createConversation, { isLoading: isCreating }] =
     useCreateConversationMutation();
+  const [createGroupConversation, { isLoading: isCreatingGroup }] =
+    useCreateGroupConversationMutation();
 
   const dispatch = useDispatch();
   const { notifications, selectedConversation } = useSelector(
@@ -65,6 +71,51 @@ const ConversationList = () => {
       setSearchResults(result?.data || []);
     } catch {
       setSearchResults([]);
+    }
+  };
+
+  const toggleGroupMember = (user) => {
+    const userId = user._id || user.id;
+    if (!userId) return;
+
+    setGroupMembers((prev) => {
+      const exists = prev.find((member) => String(member._id) === String(userId));
+      if (exists) {
+        return prev.filter((member) => String(member._id) !== String(userId));
+      }
+
+      return [...prev, { _id: userId, name: getUserDisplayName(user) }];
+    });
+  };
+
+  const handleCreateGroup = async () => {
+    setStartChatError("");
+    if (!groupName.trim()) {
+      setStartChatError("Please enter a group name.");
+      return;
+    }
+    if (groupMembers.length < 2) {
+      setStartChatError("Please select at least 2 users for a group.");
+      return;
+    }
+
+    try {
+      const result = await createGroupConversation({
+        name: groupName.trim(),
+        members: groupMembers.map((member) => member._id),
+      }).unwrap();
+
+      if (result?.data) {
+        handleSelectConversation(result.data);
+        setSearchTerm("");
+        setSearchResults([]);
+        setGroupName("");
+        setGroupMembers([]);
+        setIsGroupMode(false);
+      }
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      setStartChatError("Could not create group. Please try again.");
     }
   };
 
@@ -122,10 +173,55 @@ const ConversationList = () => {
   };
 
   return (
-    <div className="h-full bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-4 border-b border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-800">Chats</h2>
+    <div className="h-full bg-[#F5F7FB] border-r border-gray-200 flex flex-col">
+      <div className="p-4 border-b border-gray-100 bg-white/70 backdrop-blur">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-gray-800">Chats</h2>
+          <button
+            onClick={() => {
+              setIsGroupMode((prev) => !prev);
+              setGroupName("");
+              setGroupMembers([]);
+              setStartChatError("");
+            }}
+            className="text-xs rounded-full bg-gray-900 text-white px-3 py-1.5"
+          >
+            {isGroupMode ? "Cancel Group" : "New Group"}
+          </button>
+        </div>
         <p className="text-xs text-gray-500">Start a new chat or continue existing ones</p>
+
+        {isGroupMode && (
+          <div className="mt-3 space-y-2 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <input
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              placeholder="Group name"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-500">
+              Pick at least 2 users from search results to create a group.
+            </p>
+
+            {groupMembers.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {groupMembers.map((member) => (
+                  <span key={member._id} className="text-xs rounded-full bg-blue-100 text-blue-700 px-2 py-1">
+                    {member.name}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={handleCreateGroup}
+              disabled={isCreatingGroup}
+              className="w-full rounded-xl bg-blue-600 text-white py-2 text-sm font-medium disabled:opacity-60"
+            >
+              {isCreatingGroup ? "Creating..." : "Create Group"}
+            </button>
+          </div>
+        )}
 
         <input
           value={searchTerm}
@@ -135,7 +231,7 @@ const ConversationList = () => {
         />
 
         {!!searchTerm && (
-          <div className="mt-2 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50">
+          <div className="mt-2 max-h-44 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
             {isSearching && (
               <p className="px-3 py-2 text-xs text-gray-500">Searching users...</p>
             )}
@@ -148,11 +244,21 @@ const ConversationList = () => {
               searchResults.map((user) => (
                 <button
                   key={user._id || user.id}
-                  onClick={() => handleStartChat(user._id || user.id)}
-                  disabled={isCreating}
-                  className="w-full text-left px-3 py-2 hover:bg-white border-b border-gray-200 last:border-b-0"
+                  onClick={() =>
+                    isGroupMode
+                      ? toggleGroupMember(user)
+                      : handleStartChat(user._id || user.id)
+                  }
+                  disabled={isCreating || isCreatingGroup}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                 >
-                  <p className="text-sm font-medium text-gray-800">{getUserDisplayName(user)}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-gray-800">{getUserDisplayName(user)}</p>
+                    {isGroupMode &&
+                      groupMembers.some(
+                        (member) => String(member._id) === String(user._id || user.id),
+                      ) && <span className="text-xs text-blue-600 font-medium">Selected</span>}
+                  </div>
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </button>
               ))}
@@ -186,7 +292,7 @@ const ConversationList = () => {
                 key={conv._id}
                 onClick={() => handleSelectConversation(conv)}
                 className={`w-full text-left px-4 py-3 border-b border-gray-100 transition ${
-                  isActive ? "bg-blue-50" : "hover:bg-gray-50"
+                  isActive ? "bg-blue-50" : "hover:bg-white"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">

@@ -68,7 +68,7 @@ const ChatWindow = () => {
 
   if (!selectedConversation) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50">
+      <div className="h-full flex items-center justify-center bg-[#F8FAFF]">
         <div className="text-center px-4">
           <p className="text-lg font-semibold text-gray-700">Select a conversation</p>
           <p className="text-sm text-gray-500 mt-1">
@@ -108,8 +108,8 @@ const ChatWindow = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
-      <div className="px-4 py-3 border-b border-gray-200 bg-white">
+    <div className="h-full flex flex-col bg-[#F8FAFF]">
+      <div className="px-4 py-3 border-b border-gray-200 bg-white/80 backdrop-blur">
         <div className="flex items-center gap-2">
           <button
             onClick={() => dispatch(setSelectedConversation(null))}
@@ -122,7 +122,7 @@ const ChatWindow = () => {
         <h3 className="text-base font-semibold text-gray-900 truncate">{title}</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-3">
         {isFetching && <p className="text-sm text-gray-500">Loading messages...</p>}
 
         {!isFetching && messages.length === 0 && (
@@ -138,13 +138,13 @@ const ChatWindow = () => {
               <div
                 className={`max-w-[80%] rounded-xl border px-3 py-2 ${
                   own
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white border-gray-200 text-gray-800"
+                    ? "bg-[#0A84FF] text-white border-[#0A84FF] shadow-sm"
+                    : "bg-white border-gray-200 text-gray-800 shadow-sm"
                 }`}
               >
                 {!own && <p className="text-xs text-gray-500 mb-1">{displayName(msg.sender)}</p>}
                 <p className="text-sm break-words">{msg.text}</p>
-                {own && <p className="text-[10px] mt-1 text-blue-100 text-right">{status}</p>}
+                {own && <p className="text-[10px] mt-1 text-blue-100/90 text-right">{status}</p>}
               </div>
             </div>
           );
@@ -155,7 +155,7 @@ const ChatWindow = () => {
         )}
       </div>
 
-      <div className="p-3 border-t border-gray-200 bg-white flex items-center gap-2">
+      <div className="p-3 border-t border-gray-200 bg-white/80 backdrop-blur flex items-center gap-2">
         <input
           value={text}
           onChange={(e) => {
@@ -182,13 +182,13 @@ const ChatWindow = () => {
             if (e.key === "Enter") handleSend();
           }}
           placeholder="Type a message..."
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 rounded-full border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         />
 
         <button
           onClick={handleSend}
           disabled={isSending || !text.trim()}
-          className="rounded-lg bg-blue-600 text-white px-4 py-2 text-sm font-medium disabled:opacity-50"
+          className="rounded-full bg-[#0A84FF] text-white px-5 py-2.5 text-sm font-medium disabled:opacity-50"
         >
           {isSending ? "Sending..." : "Send"}
         </button>
