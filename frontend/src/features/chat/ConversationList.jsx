@@ -24,8 +24,9 @@ const getConversationTitle = (conversation) => {
 const ConversationList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  const [startChatError, setStartChatError] = useState("");
 
-  const { data, isLoading } = useGetConversationsQuery();
+  const { data, isLoading, refetch } = useGetConversationsQuery();
   const [searchUsers, { isFetching: isSearching }] = useLazySearchUsersQuery();
   const [createConversation, { isLoading: isCreating }] =
     useCreateConversationMutation();
@@ -34,6 +35,7 @@ const ConversationList = () => {
   const { notifications, selectedConversation } = useSelector(
     (state) => state.chat,
   );
+  const currentUserId = useSelector((state) => state.auth.user?._id);
 
   const conversations = useMemo(() => data?.data || [], [data]);
 
@@ -44,6 +46,7 @@ const ConversationList = () => {
 
   const handleSearch = async (value) => {
     setSearchTerm(value);
+    setStartChatError("");
 
     if (!value.trim()) {
       setSearchResults([]);
@@ -58,17 +61,56 @@ const ConversationList = () => {
     }
   };
 
+  const findExistingConversation = (targetUserId) => {
+    return conversations.find((conv) => {
+      if (conv.type !== "private") return false;
+      const members = conv.members || [];
+      const hasTarget = members.some(
+        (member) => String(member?._id || member) === String(targetUserId),
+      );
+      const hasCurrentUser = members.some(
+        (member) => String(member?._id || member) === String(currentUserId),
+      );
+
+      return hasTarget && hasCurrentUser;
+    });
+  };
+
   const handleStartChat = async (userId) => {
+    setStartChatError("");
+
+    const existingConversation = findExistingConversation(userId);
+    if (existingConversation) {
+      handleSelectConversation(existingConversation);
+      setSearchTerm("");
+      setSearchResults([]);
+      return;
+    }
+
     try {
       const result = await createConversation({ targetUserId: userId }).unwrap();
       const newConversation = result?.data;
+
       if (newConversation) {
         handleSelectConversation(newConversation);
         setSearchTerm("");
         setSearchResults([]);
+        return;
       }
+
+      await refetch();
+      const fallbackConversation = findExistingConversation(userId);
+      if (fallbackConversation) {
+        handleSelectConversation(fallbackConversation);
+        setSearchTerm("");
+        setSearchResults([]);
+        return;
+      }
+
+      setStartChatError("Could not open this chat. Please try again.");
     } catch (error) {
       console.error("Failed to start conversation:", error);
+      setStartChatError("Could not open this chat. Please try again.");
     }
   };
 
@@ -98,8 +140,8 @@ const ConversationList = () => {
             {!isSearching &&
               searchResults.map((user) => (
                 <button
-                  key={user._id}
-                  onClick={() => handleStartChat(user._id)}
+                  key={user._id || user.id}
+                  onClick={() => handleStartChat(user._id || user.id)}
                   disabled={isCreating}
                   className="w-full text-left px-3 py-2 hover:bg-white border-b border-gray-200 last:border-b-0"
                 >
@@ -108,6 +150,10 @@ const ConversationList = () => {
                 </button>
               ))}
           </div>
+        )}
+
+        {!!startChatError && (
+          <p className="mt-2 text-xs text-red-600">{startChatError}</p>
         )}
       </div>
 
