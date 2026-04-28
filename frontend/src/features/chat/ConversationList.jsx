@@ -54,6 +54,51 @@ const ConversationList = () => {
 
   const conversations = useMemo(() => data?.data || [], [data]);
 
+  const latestNotificationByConversation = useMemo(() => {
+    const map = new Map();
+
+    notifications.forEach((notification) => {
+      const conversationId = String(notification?.conversationId || "");
+      if (!conversationId) return;
+
+      const existing = map.get(conversationId);
+      const incomingTime = new Date(
+        notification?.message?.createdAt || notification?.message?.updatedAt || 0,
+      ).getTime();
+      const existingTime = new Date(
+        existing?.message?.createdAt || existing?.message?.updatedAt || 0,
+      ).getTime();
+
+      if (!existing || incomingTime >= existingTime) {
+        map.set(conversationId, notification);
+      }
+    });
+
+    return map;
+  }, [notifications]);
+
+  const sortedConversations = useMemo(() => {
+    return [...conversations].sort((a, b) => {
+      const aNotification = latestNotificationByConversation.get(String(a._id));
+      const bNotification = latestNotificationByConversation.get(String(b._id));
+
+      const aTime = new Date(
+        aNotification?.message?.createdAt ||
+          a.lastMessage?.createdAt ||
+          a.updatedAt ||
+          0,
+      ).getTime();
+      const bTime = new Date(
+        bNotification?.message?.createdAt ||
+          b.lastMessage?.createdAt ||
+          b.updatedAt ||
+          0,
+      ).getTime();
+
+      return bTime - aTime;
+    });
+  }, [conversations, latestNotificationByConversation]);
+
   const handleSelectConversation = (conversation) => {
     dispatch(setSelectedConversation(conversation));
     dispatch(clearNotifications(conversation._id));
@@ -282,12 +327,20 @@ const ConversationList = () => {
         )}
 
         {!isLoading &&
-          conversations.map((conv) => {
+          sortedConversations.map((conv) => {
             const count = notifications.filter(
-              (n) => n.conversationId === conv._id,
+              (n) => String(n.conversationId) === String(conv._id),
             ).length;
 
             const isActive = selectedConversation?._id === conv._id;
+
+            const latestNotification = latestNotificationByConversation.get(
+              String(conv._id),
+            );
+            const previewText =
+              latestNotification?.message?.text ||
+              conv.lastMessage?.text ||
+              "No messages yet";
 
             return (
               <button
@@ -310,7 +363,7 @@ const ConversationList = () => {
                 </div>
 
                 <p className="text-xs text-gray-500 truncate mt-1">
-                  {conv.lastMessage?.text || "No messages yet"}
+                  {previewText}
                 </p>
               </button>
             );

@@ -21,12 +21,13 @@ const ChatWindow = () => {
 
   const [text, setText] = useState("");
   const typingTimeoutRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   const socket = getSocket();
 
-  const { data, isFetching } = useGetMessagesQuery(
+  const { data, isFetching, refetch } = useGetMessagesQuery(
     { conversationId: selectedConversation?._id },
-    { skip: !selectedConversation },
+    { skip: !selectedConversation, refetchOnMountOrArgChange: true },
   );
 
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
@@ -45,10 +46,13 @@ const ChatWindow = () => {
   };
 
   useEffect(() => {
-    if (data?.data) {
-      dispatch(setMessages(data.data));
-    }
+    dispatch(setMessages(data?.data || []));
   }, [data, dispatch]);
+
+  useEffect(() => {
+    if (!selectedConversation?._id) return;
+    refetch();
+  }, [selectedConversation?._id, refetch]);
 
   useEffect(() => {
     if (!socket || !selectedConversation?._id) return;
@@ -67,19 +71,6 @@ const ChatWindow = () => {
     if (others.length === 0) return "Direct message";
     return others.map(displayName).join(", ");
   }, [selectedConversation, currentUserId]);
-
-  if (!selectedConversation) {
-    return (
-      <div className="h-full flex items-center justify-center bg-[#F8FAFF]">
-        <div className="text-center px-4">
-          <p className="text-lg font-semibold text-gray-700">Select a conversation</p>
-          <p className="text-sm text-gray-500 mt-1">
-            Choose a chat from the left panel or search a user to start chatting.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   const handleSend = async () => {
     if (!text.trim() || !selectedConversation?._id) return;
@@ -108,6 +99,23 @@ const ChatWindow = () => {
       text: trimmedText,
     });
   };
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, selectedConversation?._id, typingUsers.length]);
+
+  if (!selectedConversation) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#F8FAFF]">
+        <div className="text-center px-4">
+          <p className="text-lg font-semibold text-gray-700">Select a conversation</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Choose a chat from the left panel or search a user to start chatting.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-[#F8FAFF]">
@@ -155,6 +163,7 @@ const ChatWindow = () => {
         {typingUsers.length > 0 && (
           <div className="text-xs italic text-gray-500">Typing...</div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="p-3 border-t border-gray-200 bg-white/80 backdrop-blur flex items-center gap-2">
