@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useGetMessagesQuery, useSendMessageMutation } from "./chat.api";
-import { setMessages } from "./chatSlice";
+import { setMessages, setSelectedConversation } from "./chatSlice";
 import { getSocket } from "./socket";
 
 const displayName = (user) => {
@@ -15,6 +15,7 @@ const ChatWindow = () => {
   const { selectedConversation, messages, typingUsers } = useSelector(
     (state) => state.chat,
   );
+  const currentUser = useSelector((state) => state.auth.user);
 
   const [text, setText] = useState("");
   const typingTimeoutRef = useRef(null);
@@ -28,18 +29,42 @@ const ChatWindow = () => {
 
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
 
+  const getSenderId = (message) => String(message?.sender?._id || message?.sender || "");
+  const isOwnMessage = (message) => getSenderId(message) === String(currentUser?._id || "");
+
+  const getMessageStatus = (message) => {
+    if (!isOwnMessage(message)) return "";
+
+    const seenCount = (message.seenBy || []).length;
+    const memberCount = (selectedConversation?.members || []).length;
+
+    if (memberCount > 1 && seenCount >= memberCount) return "Seen";
+    return "Delivered";
+  };
+
   useEffect(() => {
     if (data?.data) {
       dispatch(setMessages(data.data));
     }
   }, [data, dispatch]);
 
+  useEffect(() => {
+    if (!socket || !selectedConversation?._id) return;
+
+    socket.emit("join_conversation", selectedConversation._id);
+    socket.emit("mark_seen", { conversationId: selectedConversation._id });
+  }, [socket, selectedConversation?._id]);
+
   const title = useMemo(() => {
     if (!selectedConversation) return "";
     if (selectedConversation.groupName) return selectedConversation.groupName;
     if (selectedConversation.channelName) return `#${selectedConversation.channelName}`;
-    return (selectedConversation.members || []).map(displayName).join(", ");
-  }, [selectedConversation]);
+    const others = (selectedConversation.members || []).filter(
+      (member) => String(member?._id || member) !== String(currentUser?._id),
+    );
+    if (others.length === 0) return "Direct message";
+    return others.map(displayName).join(", ");
+  }, [selectedConversation, currentUser?._id]);
 
   if (!selectedConversation) {
     return (
@@ -56,23 +81,44 @@ const ChatWindow = () => {
 
   const handleSend = async () => {
     if (!text.trim() || !selectedConversation?._id) return;
-
-    await sendMessage({
+    const payload = {
       conversationId: selectedConversation._id,
       text: text.trim(),
-    });
+    };
+    const trimmedText = text.trim();
 
     setText("");
 
-    socket?.emit("stop_typing", {
+    if (socket?.connected) {
+      socket.emit("send_message", payload, async (ack) => {
+        if (!ack?.success) {
+          await sendMessage(payload);
+        }
+      });
+      socket.emit("stop_typing", {
+        conversationId: selectedConversation._id,
+      });
+      return;
+    }
+
+    await sendMessage({
       conversationId: selectedConversation._id,
+      text: trimmedText,
     });
   };
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
       <div className="px-4 py-3 border-b border-gray-200 bg-white">
-        <p className="text-sm text-gray-500">Conversation</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => dispatch(setSelectedConversation(null))}
+            className="md:hidden text-xs text-blue-600 font-medium"
+          >
+            ← Back
+          </button>
+          <p className="text-sm text-gray-500">Conversation</p>
+        </div>
         <h3 className="text-base font-semibold text-gray-900 truncate">{title}</h3>
       </div>
 
@@ -83,15 +129,29 @@ const ChatWindow = () => {
           <p className="text-sm text-gray-500">No messages yet. Start the conversation 👋</p>
         )}
 
-        {messages.map((msg) => (
-          <div key={msg._id} className="max-w-[80%] rounded-xl bg-white border border-gray-200 px-3 py-2">
-            <p className="text-xs text-gray-500 mb-1">{displayName(msg.sender)}</p>
-            <p className="text-sm text-gray-800 break-words">{msg.text}</p>
-          </div>
-        ))}
+        {messages.map((msg) => {
+          const own = isOwnMessage(msg);
+          const status = getMessageStatus(msg);
+
+          return (
+            <div key={msg._id} className={`flex ${own ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`max-w-[80%] rounded-xl border px-3 py-2 ${
+                  own
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white border-gray-200 text-gray-800"
+                }`}
+              >
+                {!own && <p className="text-xs text-gray-500 mb-1">{displayName(msg.sender)}</p>}
+                <p className="text-sm break-words">{msg.text}</p>
+                {own && <p className="text-[10px] mt-1 text-blue-100 text-right">{status}</p>}
+              </div>
+            </div>
+          );
+        })}
 
         {typingUsers.length > 0 && (
-          <div className="text-xs italic text-gray-500">Someone is typing...</div>
+          <div className="text-xs italic text-gray-500">Typing...</div>
         )}
       </div>
 
