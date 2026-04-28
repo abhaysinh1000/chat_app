@@ -28,9 +28,10 @@ const ChatWindow = () => {
   );
 
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
+  const currentUserId = currentUser?._id || currentUser?.id;
 
   const getSenderId = (message) => String(message?.sender?._id || message?.sender || "");
-  const isOwnMessage = (message) => getSenderId(message) === String(currentUser?._id || "");
+  const isOwnMessage = (message) => getSenderId(message) === String(currentUserId || "");
 
   const getMessageStatus = (message) => {
     if (!isOwnMessage(message)) return "";
@@ -60,11 +61,11 @@ const ChatWindow = () => {
     if (selectedConversation.groupName) return selectedConversation.groupName;
     if (selectedConversation.channelName) return `#${selectedConversation.channelName}`;
     const others = (selectedConversation.members || []).filter(
-      (member) => String(member?._id || member) !== String(currentUser?._id),
+      (member) => String(member?._id || member) !== String(currentUserId),
     );
     if (others.length === 0) return "Direct message";
     return others.map(displayName).join(", ");
-  }, [selectedConversation, currentUser?._id]);
+  }, [selectedConversation, currentUserId]);
 
   if (!selectedConversation) {
     return (

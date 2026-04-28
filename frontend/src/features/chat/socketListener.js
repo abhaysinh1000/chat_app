@@ -65,20 +65,11 @@ export const initSocketListeners = (dispatch, getState) => {
   };
   socket.on("messages_seen", onMessagesSeen);
 
-  // =========================
-  // NOTIFICATIONS
-  // =========================
-  const onNewNotification = (data) => {
-    dispatch(addNotification(data));
-  };
-  socket.on("new_notification", onNewNotification);
-
   return () => {
     socket.off("receive_message", onReceiveMessage);
     socket.off("online_users", onOnlineUsers);
     socket.off("typing", onTyping);
     socket.off("stop_typing", onStopTyping);
     socket.off("messages_seen", onMessagesSeen);
-    socket.off("new_notification", onNewNotification);
   };
 };
