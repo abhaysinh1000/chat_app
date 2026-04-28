@@ -7,7 +7,9 @@ const App = () => {
   return (
     <>
       <div className="min-h-screen w-full">
-        <AppRoutes />
+        <AuthBootstrap>
+          <AppRoutes />
+        </AuthBootstrap>
         <Toaster/>
       </div>
     </>

@@ -48,9 +48,11 @@ export const login = asyncHandler(async (req, res) => {
     success: true,
     message: "Login successful",
     user: {
+      _id: user._id,
       firstName: user.firstName, // ✅ camelCase
       lastName: user.lastName, // ✅ camelCase
       email: user.email,
+      isVerified: user.isVerified,
     },
   });
 });
