@@ -1,4 +1,3 @@
-import { email } from "zod";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const Profile = asyncHandler(async (req, res) => {

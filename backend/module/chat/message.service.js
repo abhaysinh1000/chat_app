@@ -166,6 +166,18 @@ export const markConversationAsSeen = async ({ conversationId, userId }) => {
   }
 
   await conversation.save();
+
+  await Message.updateMany(
+    {
+      conversation: conversationId,
+      seenBy: { $ne: userId },
+    },
+    {
+      $addToSet: {
+        seenBy: userId,
+      },
+    },
+  );
 };
 
 
