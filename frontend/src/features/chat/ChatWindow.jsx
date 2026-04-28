@@ -10,6 +10,8 @@ const displayName = (user) => {
   return fullName || user.email || "Unknown";
 };
 
+const getSenderId = (message) => String(message?.sender?._id || message?.sender || "");
+
 const ChatWindow = () => {
   const dispatch = useDispatch();
   const { selectedConversation, messages, typingUsers } = useSelector(
@@ -30,21 +32,7 @@ const ChatWindow = () => {
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
   const currentUserId = currentUser?._id || currentUser?.id;
 
-  const getSenderId = (message) => String(message?.sender?._id || message?.sender || "");
   const isOwnMessage = (message) => getSenderId(message) === String(currentUserId || "");
-
-  const getMessageStatus = (message) => {
-    if (!isOwnMessage(message)) return "";
-
-    const seenCount = (message.seenBy || []).length;
-    const memberCount = (selectedConversation?.members || []).length;
-
-    if (memberCount > 1 && seenCount >= memberCount) return "Seen";
-    return "Delivered";
-  };
-
-  const getSenderId = (message) => String(message?.sender?._id || message?.sender || "");
-  const isOwnMessage = (message) => getSenderId(message) === String(currentUser?._id || "");
 
   const getMessageStatus = (message) => {
     if (!isOwnMessage(message)) return "";
