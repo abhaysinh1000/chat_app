@@ -36,16 +36,13 @@ const ChatWindow = () => {
   const isOwnMessage = (message) => getSenderId(message) === String(currentUserId || "");
 
   const getMessageStatus = (message) => {
-    if (!isOwnMessage(message)) return null;
+    if (!isOwnMessage(message)) return "";
 
-    const seenBy = message.seenBy || [];
-    const seenByOtherUser = seenBy.some(
-      (id) => String(id) !== String(currentUserId),
-    );
+    const seenCount = (message.seenBy || []).length;
+    const memberCount = (selectedConversation?.members || []).length;
 
-    return {
-      seen: seenByOtherUser,
-    };
+    if (memberCount > 1 && seenCount >= memberCount) return "Seen";
+    return "Delivered";
   };
 
   useEffect(() => {
@@ -157,16 +154,7 @@ const ChatWindow = () => {
               >
                 {!own && <p className="text-xs text-gray-500 mb-1">{displayName(msg.sender)}</p>}
                 <p className="text-sm break-words">{msg.text}</p>
-                {own && status && (
-                  <p
-                    className={`text-[11px] mt-1 text-right tracking-tight ${
-                      status.seen ? "text-[#53BDEB]" : "text-white/75"
-                    }`}
-                    title={status.seen ? "Seen" : "Delivered"}
-                  >
-                    {status.seen ? "✓✓" : "✓✓"}
-                  </p>
-                )}
+                {own && <p className="text-[10px] mt-1 text-blue-100/90 text-right">{status}</p>}
               </div>
             </div>
           );
