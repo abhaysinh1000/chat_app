@@ -13,11 +13,18 @@ const getUserDisplayName = (user) => {
   return fullName || user.email || "Unknown user";
 };
 
-const getConversationTitle = (conversation) => {
+const getConversationTitle = (conversation, currentUserId) => {
   if (conversation.groupName) return conversation.groupName;
   if (conversation.channelName) return `#${conversation.channelName}`;
 
-  const names = (conversation.members || []).map(getUserDisplayName);
+  const filteredMembers =
+    conversation.type === "private"
+      ? (conversation.members || []).filter(
+          (member) => String(member?._id || member) !== String(currentUserId),
+        )
+      : conversation.members || [];
+
+  const names = filteredMembers.map(getUserDisplayName);
   return names.length ? names.join(", ") : "Untitled conversation";
 };
 
@@ -183,8 +190,8 @@ const ConversationList = () => {
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {getConversationTitle(conv)}
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                    {getConversationTitle(conv, currentUserId)}
                   </p>
 
                   {count > 0 && (

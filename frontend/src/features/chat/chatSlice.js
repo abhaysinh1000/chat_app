@@ -22,6 +22,7 @@ const chatSlice = createSlice({
     setSelectedConversation: (state, action) => {
       state.selectedConversation = action.payload;
       state.messages = []; // reset when switching chat
+      state.typingUsers = [];
     },
 
     // =========================
@@ -36,6 +37,24 @@ const chatSlice = createSlice({
     // =========================
     addMessage: (state, action) => {
       state.messages.push(action.payload);
+    },
+
+    markConversationSeenByUser: (state, action) => {
+      const { conversationId, userId } = action.payload;
+
+      if (state.selectedConversation?._id !== conversationId) return;
+
+      state.messages = state.messages.map((message) => {
+        const seenBy = message.seenBy || [];
+        const hasUser = seenBy.some((id) => String(id) === String(userId));
+
+        if (hasUser) return message;
+
+        return {
+          ...message,
+          seenBy: [...seenBy, userId],
+        };
+      });
     },
 
     // =========================
@@ -83,6 +102,7 @@ export const {
   setSelectedConversation,
   setMessages,
   addMessage,
+  markConversationSeenByUser,
   setOnlineUsers,
   setTyping,
   removeTyping,

@@ -1,9 +1,31 @@
 import ConversationList from "./ConversationList";
 import ChatWindow from "./ChatWindow";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector, useStore } from "react-redux";
+import { useEffect } from "react";
+import { connectSocket, disconnectSocket } from "./socket";
+import { initSocketListeners } from "./socketListener";
 
 const ChatPage = () => {
   const { selectedConversation } = useSelector((state) => state.chat);
+  const user = useSelector((state) => state.auth.user);
+  const dispatch = useDispatch();
+  const store = useStore();
+
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = connectSocket();
+    const cleanupListeners = initSocketListeners(dispatch, store.getState);
+
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
+    });
+
+    return () => {
+      cleanupListeners?.();
+      disconnectSocket();
+    };
+  }, [user, dispatch, store]);
 
   return (
     <div className="h-screen bg-gray-100 p-3 md:p-4">

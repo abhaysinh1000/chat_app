@@ -27,6 +27,11 @@ const socketHandler = (io) => {
       socket.join(conv._id.toString());
     });
 
+    socket.on("join_conversation", (conversationId) => {
+      if (!conversationId) return;
+      socket.join(conversationId.toString());
+    });
+
     // online users
     io.emit("online_users", getOnlineUsers());
 
