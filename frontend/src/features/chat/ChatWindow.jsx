@@ -10,7 +10,28 @@ const displayName = (user) => {
   return fullName || user.email || "Unknown";
 };
 
-const getSenderId = (message) => String(message?.sender?._id || message?.sender || "");
+const getSenderId = (message) => String(message?.sender?._id || message?.sender?.id || message?.sender || "");
+
+const getComparableUserKeys = (user) => {
+  if (!user) return [];
+
+  return [user?._id, user?.id, user?.email]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+};
+
+const formatTime = (value) => {
+  if (!value) return "";
+
+  try {
+    return new Date(value).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+};
 
 const formatTime = (value) => {
   if (!value) return "";
@@ -45,8 +66,20 @@ const ChatWindow = () => {
 
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
   const currentUserId = currentUser?._id || currentUser?.id;
+  const currentUserKeys = useMemo(() => getComparableUserKeys(currentUser), [currentUser]);
 
-  const isOwnMessage = (message) => getSenderId(message) === String(currentUserId || "");
+  const isOwnMessage = (message) => {
+    const senderKeys = getComparableUserKeys(message?.sender);
+
+    if (senderKeys.length > 0) {
+      return senderKeys.some((key) => currentUserKeys.includes(key));
+    }
+
+    const senderId = String(getSenderId(message) || "").toLowerCase();
+    if (!senderId) return false;
+
+    return currentUserKeys.includes(senderId);
+  };
 
   const getMessageStatus = (message) => {
     if (!isOwnMessage(message)) return "";
