@@ -85,7 +85,23 @@ const chatSlice = createSlice({
     // NOTIFICATIONS
     // =========================
     addNotification: (state, action) => {
-      state.notifications.push(action.payload);
+      const incoming = action.payload;
+      const incomingMessageId = incoming?.message?._id;
+
+      const exists = state.notifications.some((item) => {
+        if (incomingMessageId && item?.message?._id) {
+          return String(item.message._id) === String(incomingMessageId);
+        }
+
+        return (
+          String(item?.conversationId) === String(incoming?.conversationId) &&
+          !incomingMessageId
+        );
+      });
+
+      if (!exists) {
+        state.notifications.push(incoming);
+      }
     },
 
     clearNotifications: (state, action) => {

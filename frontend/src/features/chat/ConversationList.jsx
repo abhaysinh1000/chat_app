@@ -48,7 +48,9 @@ const ConversationList = () => {
   const { notifications, selectedConversation } = useSelector(
     (state) => state.chat,
   );
-  const currentUserId = useSelector((state) => state.auth.user?._id);
+  const currentUserId = useSelector(
+    (state) => state.auth.user?._id || state.auth.user?.id,
+  );
 
   const conversations = useMemo(() => data?.data || [], [data]);
 
