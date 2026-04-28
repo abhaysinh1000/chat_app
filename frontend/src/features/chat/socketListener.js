@@ -5,22 +5,24 @@ import {
   setTyping,
   removeTyping,
   addNotification,
+  markConversationSeenByUser,
 } from "./chatSlice";
 
 export const initSocketListeners = (dispatch, getState) => {
   const socket = getSocket();
-  if (!socket) return;
+  if (!socket) return () => {};
 
   // =========================
   // RECEIVE MESSAGE
   // =========================
-  socket.on("receive_message", (message) => {
+  const onReceiveMessage = (message) => {
     const state = getState();
     const selected = state.chat.selectedConversation;
 
     // if user is inside that chat → add message
-    if (selected && selected._id === message.conversation) {
+    if (selected && selected._id === String(message.conversation)) {
       dispatch(addMessage(message));
+      socket.emit("mark_seen", { conversationId: selected._id });
     } else {
       // otherwise → notification
       dispatch(
@@ -30,30 +32,44 @@ export const initSocketListeners = (dispatch, getState) => {
         })
       );
     }
-  });
+  };
+  socket.on("receive_message", onReceiveMessage);
 
   // =========================
   // ONLINE USERS
   // =========================
-  socket.on("online_users", (users) => {
+  const onOnlineUsers = (users) => {
     dispatch(setOnlineUsers(users));
-  });
+  };
+  socket.on("online_users", onOnlineUsers);
 
   // =========================
   // TYPING
   // =========================
-  socket.on("typing", ({ userId }) => {
+  const onTyping = ({ userId, conversationId }) => {
+    const selectedId = getState().chat.selectedConversation?._id;
+    if (!selectedId || selectedId !== conversationId) return;
     dispatch(setTyping(userId));
-  });
+  };
+  socket.on("typing", onTyping);
 
-  socket.on("stop_typing", ({ userId }) => {
+  const onStopTyping = ({ userId, conversationId }) => {
+    const selectedId = getState().chat.selectedConversation?._id;
+    if (!selectedId || selectedId !== conversationId) return;
     dispatch(removeTyping(userId));
-  });
+  };
+  socket.on("stop_typing", onStopTyping);
 
-  // =========================
-  // NOTIFICATIONS
-  // =========================
-  socket.on("new_notification", (data) => {
-    dispatch(addNotification(data));
-  });
+  const onMessagesSeen = ({ conversationId, userId }) => {
+    dispatch(markConversationSeenByUser({ conversationId, userId }));
+  };
+  socket.on("messages_seen", onMessagesSeen);
+
+  return () => {
+    socket.off("receive_message", onReceiveMessage);
+    socket.off("online_users", onOnlineUsers);
+    socket.off("typing", onTyping);
+    socket.off("stop_typing", onStopTyping);
+    socket.off("messages_seen", onMessagesSeen);
+  };
 };

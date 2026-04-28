@@ -22,6 +22,7 @@ const chatSlice = createSlice({
     setSelectedConversation: (state, action) => {
       state.selectedConversation = action.payload;
       state.messages = []; // reset when switching chat
+      state.typingUsers = [];
     },
 
     // =========================
@@ -36,6 +37,24 @@ const chatSlice = createSlice({
     // =========================
     addMessage: (state, action) => {
       state.messages.push(action.payload);
+    },
+
+    markConversationSeenByUser: (state, action) => {
+      const { conversationId, userId } = action.payload;
+
+      if (state.selectedConversation?._id !== conversationId) return;
+
+      state.messages = state.messages.map((message) => {
+        const seenBy = message.seenBy || [];
+        const hasUser = seenBy.some((id) => String(id) === String(userId));
+
+        if (hasUser) return message;
+
+        return {
+          ...message,
+          seenBy: [...seenBy, userId],
+        };
+      });
     },
 
     // =========================
@@ -66,7 +85,23 @@ const chatSlice = createSlice({
     // NOTIFICATIONS
     // =========================
     addNotification: (state, action) => {
-      state.notifications.push(action.payload);
+      const incoming = action.payload;
+      const incomingMessageId = incoming?.message?._id;
+
+      const exists = state.notifications.some((item) => {
+        if (incomingMessageId && item?.message?._id) {
+          return String(item.message._id) === String(incomingMessageId);
+        }
+
+        return (
+          String(item?.conversationId) === String(incoming?.conversationId) &&
+          !incomingMessageId
+        );
+      });
+
+      if (!exists) {
+        state.notifications.push(incoming);
+      }
     },
 
     clearNotifications: (state, action) => {
@@ -83,6 +118,7 @@ export const {
   setSelectedConversation,
   setMessages,
   addMessage,
+  markConversationSeenByUser,
   setOnlineUsers,
   setTyping,
   removeTyping,
