@@ -140,8 +140,8 @@ const ConversationList = () => {
             {!isSearching &&
               searchResults.map((user) => (
                 <button
-                  key={user._id}
-                  onClick={() => handleStartChat(user._id)}
+                  key={user._id || user.id}
+                  onClick={() => handleStartChat(user._id || user.id)}
                   disabled={isCreating}
                   className="w-full text-left px-3 py-2 hover:bg-white border-b border-gray-200 last:border-b-0"
                 >
