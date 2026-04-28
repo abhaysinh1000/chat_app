@@ -33,19 +33,6 @@ const formatTime = (value) => {
   }
 };
 
-const formatTime = (value) => {
-  if (!value) return "";
-
-  try {
-    return new Date(value).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "";
-  }
-};
-
 const ChatWindow = () => {
   const dispatch = useDispatch();
   const { selectedConversation, messages, typingUsers } = useSelector(
