@@ -18,8 +18,14 @@ const getConversationTitle = (conversation, currentUserId) => {
   if (conversation.groupName) return conversation.groupName;
   if (conversation.channelName) return `#${conversation.channelName}`;
 
+  const isPrivateConversation =
+    conversation.type === "private" ||
+    (!conversation.groupName &&
+      !conversation.channelName &&
+      (conversation.members || []).length === 2);
+
   const filteredMembers =
-    conversation.type === "private"
+    isPrivateConversation
       ? (conversation.members || []).filter(
           (member) => String(member?._id || member) !== String(currentUserId),
         )
