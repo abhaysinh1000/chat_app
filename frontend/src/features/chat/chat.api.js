@@ -19,6 +19,15 @@ export const chatApi = baseApi.injectEndpoints({
       invalidatesTags: ["Chat"],
     }),
 
+    createGroupConversation: builder.mutation({
+      query: (body) => ({
+        url: "/conversation/group",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Chat"],
+    }),
+
     searchUsers: builder.query({
       query: (query) => ({
         url: `/conversation/users/search?query=${encodeURIComponent(query)}`,
@@ -49,6 +58,7 @@ export const {
   useSendMessageMutation,
   useGetMessagesQuery,
   useCreateConversationMutation,
+  useCreateGroupConversationMutation,
   useGetConversationsQuery,
   useLazySearchUsersQuery,
 } = chatApi;
