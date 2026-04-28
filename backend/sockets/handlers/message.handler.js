@@ -5,7 +5,7 @@ import {
 
 export const handleMessageEvents = (socket, io, userId) => {
   // SEND MESSAGE
-  socket.on("send_message", async (data) => {
+  socket.on("send_message", async (data, callback) => {
     try {
       const { conversationId, text } = data;
 
@@ -21,8 +21,15 @@ export const handleMessageEvents = (socket, io, userId) => {
         conversationId,
         message,
       });
+
+      if (callback) {
+        callback({ success: true, data: message });
+      }
     } catch (error) {
       console.error("Message error:", error.message);
+      if (callback) {
+        callback({ success: false, message: error.message });
+      }
     }
   });
 
