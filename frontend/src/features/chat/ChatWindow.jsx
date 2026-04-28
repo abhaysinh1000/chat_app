@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useGetMessagesQuery, useSendMessageMutation } from "./chat.api";
-import { setMessages } from "./chatSlice";
+import { setMessages, setSelectedConversation } from "./chatSlice";
 import { getSocket } from "./socket";
 
 const displayName = (user) => {
@@ -72,7 +72,15 @@ const ChatWindow = () => {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       <div className="px-4 py-3 border-b border-gray-200 bg-white">
-        <p className="text-sm text-gray-500">Conversation</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => dispatch(setSelectedConversation(null))}
+            className="md:hidden text-xs text-blue-600 font-medium"
+          >
+            ← Back
+          </button>
+          <p className="text-sm text-gray-500">Conversation</p>
+        </div>
         <h3 className="text-base font-semibold text-gray-900 truncate">{title}</h3>
       </div>
 
