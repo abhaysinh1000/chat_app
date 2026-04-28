@@ -43,6 +43,19 @@ const ChatWindow = () => {
     return "Delivered";
   };
 
+  const getSenderId = (message) => String(message?.sender?._id || message?.sender || "");
+  const isOwnMessage = (message) => getSenderId(message) === String(currentUser?._id || "");
+
+  const getMessageStatus = (message) => {
+    if (!isOwnMessage(message)) return "";
+
+    const seenCount = (message.seenBy || []).length;
+    const memberCount = (selectedConversation?.members || []).length;
+
+    if (memberCount > 1 && seenCount >= memberCount) return "Seen";
+    return "Delivered";
+  };
+
   useEffect(() => {
     if (data?.data) {
       dispatch(setMessages(data.data));
