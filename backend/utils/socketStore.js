@@ -1,6 +1,7 @@
 const userSocketMap = new Map();
 
 export const addUserSocket = (userId, socketId) => {
+  if (!userId || !socketId) return;
   userSocketMap.set(userId.toString(), socketId);
 };
 
