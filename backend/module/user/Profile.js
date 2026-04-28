@@ -6,6 +6,8 @@ export const Profile = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     data: {
+      _id: user._id,
+      id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,

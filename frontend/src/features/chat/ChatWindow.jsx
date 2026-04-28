@@ -10,7 +10,28 @@ const displayName = (user) => {
   return fullName || user.email || "Unknown";
 };
 
-const getSenderId = (message) => String(message?.sender?._id || message?.sender || "");
+const getSenderId = (message) => String(message?.sender?._id || message?.sender?.id || message?.sender || "");
+
+const getComparableUserKeys = (user) => {
+  if (!user) return [];
+
+  return [user?._id, user?.id, user?.email]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+};
+
+const formatTime = (value) => {
+  if (!value) return "";
+
+  try {
+    return new Date(value).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+};
 
 const ChatWindow = () => {
   const dispatch = useDispatch();
@@ -32,8 +53,20 @@ const ChatWindow = () => {
 
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
   const currentUserId = currentUser?._id || currentUser?.id;
+  const currentUserKeys = useMemo(() => getComparableUserKeys(currentUser), [currentUser]);
 
-  const isOwnMessage = (message) => getSenderId(message) === String(currentUserId || "");
+  const isOwnMessage = (message) => {
+    const senderKeys = getComparableUserKeys(message?.sender);
+
+    if (senderKeys.length > 0) {
+      return senderKeys.some((key) => currentUserKeys.includes(key));
+    }
+
+    const senderId = String(getSenderId(message) || "").toLowerCase();
+    if (!senderId) return false;
+
+    return currentUserKeys.includes(senderId);
+  };
 
   const getMessageStatus = (message) => {
     if (!isOwnMessage(message)) return "";
@@ -41,8 +74,14 @@ const ChatWindow = () => {
     const seenCount = (message.seenBy || []).length;
     const memberCount = (selectedConversation?.members || []).length;
 
-    if (memberCount > 1 && seenCount >= memberCount) return "Seen";
-    return "Delivered";
+    if (memberCount > 1 && seenCount >= memberCount) return "read";
+    return "delivered";
+  };
+
+  const getMessageStatusIcon = (status) => {
+    if (status === "read") return "✓✓";
+    if (status === "delivered") return "✓";
+    return "";
   };
 
   useEffect(() => {
@@ -146,15 +185,26 @@ const ChatWindow = () => {
           return (
             <div key={msg._id} className={`flex ${own ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[80%] rounded-xl border px-3 py-2 ${
+                className={`max-w-[80%] rounded-2xl border px-3 py-2 ${
                   own
-                    ? "bg-[#0A84FF] text-white border-[#0A84FF] shadow-sm"
-                    : "bg-white border-gray-200 text-gray-800 shadow-sm"
+                    ? "bg-[#0A84FF] text-white border-[#0A84FF] rounded-br-md shadow-sm"
+                    : "bg-white border-gray-200 text-gray-800 rounded-bl-md shadow-sm"
                 }`}
               >
                 {!own && <p className="text-xs text-gray-500 mb-1">{displayName(msg.sender)}</p>}
                 <p className="text-sm break-words">{msg.text}</p>
-                {own && <p className="text-[10px] mt-1 text-blue-100/90 text-right">{status}</p>}
+                <div
+                  className={`mt-1 flex items-center gap-1 text-[10px] ${
+                    own ? "justify-end text-blue-100" : "justify-start text-gray-400"
+                  }`}
+                >
+                  <span>{formatTime(msg.createdAt || msg.updatedAt)}</span>
+                  {own && (
+                    <span className={status === "read" ? "text-cyan-200" : "text-blue-100"}>
+                      {getMessageStatusIcon(status)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
